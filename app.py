@@ -1,87 +1,91 @@
 import streamlit as st
 import google.generativeai as genai
+from PIL import Image
+import tempfile
+import os
 
 # ---------------- 設定網頁基本資訊 ----------------
-st.set_page_config(
-    page_title="大聯盟英語特訓營",
-    page_icon="⚾",
-    layout="centered"
-)
+st.set_page_config(page_title="大聯盟英語特訓營", page_icon="⚾", layout="centered")
 
-# ---------------- 初始化狀態 (計分板) ----------------
+# 初始化計分板
 if 'points' not in st.session_state:
     st.session_state.points = 0
 
 # ---------------- 側邊欄：教練辦公室 ----------------
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3349/3349286.png", width=100) # 棒球圖示
-    st.title("教練辦公室")
-    st.write("請先插入大腦金鑰，啟動 AI 教練！")
-    
-    # 讓家長輸入 API 金鑰的地方，輸入密碼會以星號隱藏
-    api_key = st.text_input("輸入 Gemini API Key:", type="password")
-    
+    st.title("⚾ 教練辦公室")
+    api_key = st.text_input("請輸入大腦金鑰 (API Key):", type="password")
     st.divider()
-    st.header("🏆 累積棒球基金")
-    st.metric(label="目前累積點數", value=f"{st.session_state.points} 點")
-    st.write("👉 目標：換取 SSK 新球棒或打擊場代幣！")
+    st.metric(label="🏆 目前累積點數", value=f"{st.session_state.points} 點")
 
-# ---------------- 主畫面區 ----------------
-st.title("⚾ 專屬大聯盟英語特訓營")
+st.title("大聯盟英語特訓營")
 
-# 檢查是否已經輸入金鑰
+# ---------------- 檢查金鑰並啟動 AI ----------------
 if not api_key:
-    st.warning("教練還沒睡醒！請先在左邊輸入 API Key 啟動系統。")
+    st.warning("教練還沒睡醒！請先在左側輸入 API Key 啟動系統。")
 else:
-    # 成功輸入金鑰後，設定 AI 大腦
+    # 設定金鑰，並指定使用能力最強的多模態模型
     genai.configure(api_key=api_key)
-    st.success("AI 教練已上線！準備開始今天的打擊訓練！")
-    
-    # 建立三個分頁，對應我們的三局比賽
-    tab1, tab2, tab3 = st.tabs(["📸 第一局：賽前情蒐 (上傳)", "🎤 第二局：揮棒練習 (跟讀)", "📝 第三局：戰術守備 (測驗)"])
-    
-    # --- 第一局：上傳雜誌照片 ---
+    model = genai.GenerativeModel('gemini-1.5-pro-latest') 
+
+    tab1, tab2, tab3 = st.tabs(["📸 第一局: 情蒐 (擷取單字)", "🎤 第二局: 揮棒 (語音跟讀)", "📝 第三局: 守備 (文法)"])
+
+    # --- 第一局：AI 讀取雜誌照片 ---
     with tab1:
         st.header("📸 第一局：上傳今日教材")
-        st.write("請拍下《大家說英語》今天的文章與 Key Words 區域。")
-        uploaded_image = st.file_uploader("上傳教材照片", type=["jpg", "png", "jpeg"])
+        uploaded_image = st.file_uploader("上傳《大家說英語》內頁照片", type=["jpg", "png", "jpeg"])
         
         if uploaded_image:
-            st.image(uploaded_image, caption="已成功接收教材！AI 教練正在分析球路...", use_column_width=True)
-            # 未來這裡會加入 API 呼叫，讓 Gemini 讀出照片裡的單字和句子
-            st.info("✅ 系統已擷取今日重點單字與句型，請進入下一局！")
+            image = Image.open(uploaded_image)
+            st.image(image, use_column_width=True)
+            
+            if st.button("請教練分析敵情 (擷取單字)"):
+                with st.spinner("教練正在解讀暗號..."):
+                    prompt = "你是一位熱血的棒球英語教練。請從這張圖片中找出3到5個重點單字，列出英文拼寫、中文解釋，並給予一句簡單的英文例句。請用棒球教練的口吻給予鼓勵！"
+                    response = model.generate_content([prompt, image])
+                    st.success("分析完成！")
+                    st.write(response.text)
 
-    # --- 第二局：語音跟讀 ---
+    # --- 第二局：AI 聆聽跟讀音檔 ---
     with tab2:
         st.header("🎤 第二局：揮棒練習 (Shadowing)")
-        st.write("教練指示：請仔細聽文章，然後按住錄音鍵跟著唸。看準球再揮棒！")
+        st.write("請唸出剛剛教練指定的句子，讓教練聽聽你的揮棒力道！")
+        audio_file = st.file_uploader("上傳你的錄音檔 (mp3/m4a/wav)", type=["mp3", "m4a", "wav"])
         
-        # 顯示要跟讀的句子 (未來由 AI 從照片擷取)
-        st.markdown("> **Learning English is like playing baseball. You need to practice every day.**")
-        
-        # 語音上傳或錄音區塊
-        audio_file = st.file_uploader("上傳你的跟讀錄音檔", type=["mp3", "m4a", "wav"])
-        
-        if st.button("⚾ 揮棒！(送出錄音)"):
+        if st.button("⚾ 提交錄音！"):
             if audio_file:
-                st.success("揮棒出去！AI 裁判正在觀看重播判定分數...")
-                # 未來這裡會呼叫 Gemini API 聽音檔並給出 0-100 分
+                with st.spinner("裁判正在看慢動作重播 (分析發音中)..."):
+                    # 將錄音檔暫存，以便傳送給 AI
+                    with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp:
+                        tmp.write(audio_file.read())
+                        tmp_path = tmp.name
+                    
+                    try:
+                        audio_upload = genai.upload_file(path=tmp_path)
+                        prompt = "你是一位大聯盟棒球英語教練。請仔細聆聽這段學生的英文跟讀，給出 0-100 的流暢度評分。挑出他發音含糊的單字，並用棒球術語（如揮棒落空、安打等）給予他熱血的評語與改進建議。"
+                        response = model.generate_content([prompt, audio_upload])
+                        st.write(response.text)
+                        
+                        st.session_state.points += 50
+                        st.success("順利上壘！獲得 50 點訓練點數！")
+                    except Exception as e:
+                        st.error("球具出現問題，請重新上傳音檔一次！")
+                    finally:
+                        os.remove(tmp_path) # 清除暫存檔
             else:
                 st.error("球還沒投出來！請先上傳錄音檔。")
 
-    # --- 第三局：單字與文法測驗 ---
+    # --- 第三局：簡單文法防呆測驗 ---
     with tab3:
-        st.header("📝 第三局：戰術與守備 (單字與句型)")
-        st.write("守備失誤是會掉分的！請精準接住教練打出的每一球。")
+        st.header("📝 第三局：戰術重組 (句型)")
+        st.write("教練指示：請把以下單字重組成正確的句子！")
+        st.info("[ baseball / is / playing / fun / very ]")
+        ans = st.text_input("請在這裡輸入你的答案 (不需加標點符號)：")
         
-        st.subheader("🛡️ 單字守備")
-        vocab_answer = st.text_input("提示：棒球 (請輸入英文拼寫)")
-        
-        st.subheader("🧠 戰術重組 (句型)")
-        st.write("教練解說：今天學到的句型是用 'need to' 表示『必須做某事』。")
-        grammar_answer = st.text_input("請將以下單字重組成正確的句子：[ practice / to / everyday / you / need ]")
-        
-        if st.button("🏆 結算今日成績"):
-            st.balloons() # 畫面會噴出慶祝氣球
-            st.success("比賽結束！完美達成任務，獲得 100 點！")
-            st.session_state.points += 100 # 點數加 100
+        if st.button("傳球！(送出答案)"):
+            if ans.lower().strip() == "playing baseball is very fun":
+                st.balloons()
+                st.success("紅中好球！完美雙殺守備！獲得 50 點！")
+                st.session_state.points += 50
+            else:
+                st.warning("這球稍微投偏了喔，檢查一下單字順序，再投一次！")
