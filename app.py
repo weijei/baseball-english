@@ -37,10 +37,13 @@ else:
             
             if st.button("請教練分析敵情"):
                 with st.spinner("教練正在解讀暗號..."):
-                    # 最新版 SDK 調用方式
+                    # 修正點：將圖片傳送給 AI 的方式
                     response = client.models.generate_content(
                         model=CURRENT_MODEL,
-                        contents=["你是一位棒球英語教練。請從圖中找出 3 個單字，給予解釋與例句。", img]
+                        contents=[
+                            "你是一位熱血的棒球教練。請從這張圖中找出 3 到 5 個英文單字，列出英中解釋與例句。請用棒球教練的口吻給予鼓勵！",
+                            uploaded_image # 直接使用 Streamlit 上傳的原始檔案物件
+                        ]
                     )
                     st.success("分析完成！")
                     st.write(response.text)
