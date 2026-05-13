@@ -37,12 +37,17 @@ else:
             
             if st.button("請教練分析敵情"):
                 with st.spinner("教練正在解讀暗號..."):
-                    # 修正點：將圖片傳送給 AI 的方式
+                    # 將 Streamlit 的上傳檔案包裝成 SDK 要求的格式
+                    image_data = uploaded_image.getvalue() # 取得照片的二進位資料
+                    
                     response = client.models.generate_content(
                         model=CURRENT_MODEL,
                         contents=[
                             "你是一位熱血的棒球教練。請從這張圖中找出 3 到 5 個英文單字，列出英中解釋與例句。請用棒球教練的口吻給予鼓勵！",
-                            uploaded_image # 直接使用 Streamlit 上傳的原始檔案物件
+                            {
+                                "mime_type": uploaded_image.type, # 告訴 AI 這是 image/jpeg 或 image/png
+                                "data": image_data               # 傳送照片內容
+                            }
                         ]
                     )
                     st.success("分析完成！")
@@ -56,9 +61,16 @@ else:
             if audio_file:
                 with st.spinner("裁判正在觀看重播..."):
                     # 語音分析邏輯
+                   # 語音分析邏輯同步優化
                     response = client.models.generate_content(
                         model=CURRENT_MODEL,
-                        contents=["你是一位棒球教練。請聽這段跟讀音檔，給予 0-100 評分並指出發音優缺點。", audio_file.read()]
+                        contents=[
+                            "你是一位棒球教練。請聽這段跟讀音檔，給予 0-100 評分並指出發音優缺點。",
+                            {
+                                "mime_type": audio_file.type, # 這裡同樣告訴 AI 這是 audio/mpeg 等格式
+                                "data": audio_file.getvalue()
+                            }
+                        ]
                     )
                     st.write(response.text)
                     st.session_state.points += 50
