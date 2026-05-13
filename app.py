@@ -26,7 +26,7 @@ if not api_key:
 else:
     # 設定金鑰，並指定使用能力最強的多模態模型
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-pro-latest') 
+    model = genai.GenerativeModel('gemini-1.5-flash') 
 
     tab1, tab2, tab3 = st.tabs(["📸 第一局: 情蒐 (擷取單字)", "🎤 第二局: 揮棒 (語音跟讀)", "📝 第三局: 守備 (文法)"])
 
