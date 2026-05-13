@@ -26,7 +26,7 @@ if not api_key:
 else:
     # 設定金鑰，並指定使用能力最強的多模態模型
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel(model_name="models/gemini-1.5-flash")
+    model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
     tab1, tab2, tab3 = st.tabs(["📸 第一局: 情蒐 (擷取單字)", "🎤 第二局: 揮棒 (語音跟讀)", "📝 第三局: 守備 (文法)"])
 
@@ -37,7 +37,7 @@ else:
         
         if uploaded_image:
             image = Image.open(uploaded_image)
-            st.image(image, use_column_width=True)
+            st.image(image, use_container_width=True)
             
             if st.button("請教練分析敵情 (擷取單字)"):
                 with st.spinner("教練正在解讀暗號..."):
